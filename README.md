@@ -55,8 +55,8 @@ async def consumer(q):
 It's recommended to pin the minor version, because if it changed, it means some *important* breaking changes occurred.
 
 ```text
-poetry add asynckivy-ext-queue@~0.1
-pip install "asynckivy-ext-queue>=0.1,<0.2"
+poetry add asynckivy-ext-queue@~0.2
+pip install "asynckivy-ext-queue>=0.2,<0.3"
 ```
 
 ## Tested on
