@@ -47,15 +47,10 @@ def test_put_to_closed_queue(capacity, close, nowait):
 @p('nowait', [True, False, ])
 def test_get_to_closed_queue(capacity, close, nowait):
     import asynckivy as ak
-    from asynckivy_ext.queue import Queue, Closed, NothingLeft
+    from asynckivy_ext.queue import Queue, Closed
     q = Queue(capacity=capacity)
-    if close:
-        q.close()
-        exc = Closed
-    else:
-        q.half_close()
-        exc = NothingLeft
-    with pytest.raises(exc):
+    q.close() if close else q.half_close()
+    with pytest.raises(Closed):
         q.get_nowait() if nowait else ak.start(q.get())
 
 
@@ -176,13 +171,13 @@ def test_two_producers_and_two_consumers(kivy_clock, capacity, close):
 @p_capacity2
 def test_close_a_queue_while_it_holding_putters_and_getters(n_producers, n_consumers, close, capacity):
     import asynckivy as ak
-    from asynckivy_ext.queue import Queue, Closed, NothingLeft
+    from asynckivy_ext.queue import Queue, Closed
 
     async def producer(q):
         with pytest.raises(Closed):
             await q.put(None)
     async def consumer(q):
-        with pytest.raises(Closed if close else NothingLeft):
+        with pytest.raises(Closed):
             await q.get()
 
     q = Queue(capacity=capacity)
@@ -274,7 +269,6 @@ def test_various_statistics_nowait(order):
 
 @p_capacity
 def test_get_nowait_while_there_are_no_putters_and_no_items(capacity):
-    import asynckivy as ak
     from asynckivy_ext.queue import Queue, WouldBlock
     q = Queue(capacity=capacity)
     with pytest.raises(WouldBlock):
@@ -340,7 +334,7 @@ def test_put_nowait_to_unbounded_queue_that_has_a_getter():
 @p_capacity2
 def test_putter_triggers_close(kivy_clock, close, capacity):
     import asynckivy as ak
-    from asynckivy_ext.queue import Queue, Closed, NothingLeft
+    from asynckivy_ext.queue import Queue, Closed
 
     async def producer1(q):
         await q.put('A')
@@ -355,8 +349,7 @@ def test_putter_triggers_close(kivy_clock, close, capacity):
         else:
             assert await q.get() == 'A'
     async def consumer2(q):
-        exc = Closed if close else NothingLeft
-        with pytest.raises(exc):
+        with pytest.raises(Closed):
             await q.get()
 
     q = Queue(capacity=capacity)
@@ -379,7 +372,7 @@ def test_putter_triggers_close(kivy_clock, close, capacity):
 @p_capacity2
 def test_getter_triggers_close(kivy_clock, close, capacity):
     import asynckivy as ak
-    from asynckivy_ext.queue import Queue, Closed, NothingLeft
+    from asynckivy_ext.queue import Queue, Closed
 
     async def producer1(q):
         await q.put('A')
@@ -397,7 +390,7 @@ def test_getter_triggers_close(kivy_clock, close, capacity):
             with pytest.raises(Closed):
                 await q.get()
         elif capacity is not None and capacity < 2:
-            with pytest.raises(NothingLeft):
+            with pytest.raises(Closed):
                 await q.get()
         else:
             assert await q.get() == 'B'

@@ -1,5 +1,5 @@
 __all__ = (
-    'QueueException', 'WouldBlock', 'Closed', 'NothingLeft',
+    'QueueException', 'WouldBlock', 'Closed',
     'Queue', 'Order', 'QueueState',
     )
 import typing as T
@@ -53,11 +53,8 @@ class Closed(QueueException):
     * one tries to get an item from a queue that is in the ``CLOSED`` state.
     * one tries to put an item into a queue that is in the ``CLOSED`` state.
     * one tries to put an item into a queue that is in the ``HALF_CLOSED`` state.
+    * one tries to get an item from an **empty** queue that is in the ``HALF_CLOSED`` state.
     '''
-
-
-class NothingLeft(QueueException):
-    '''Occurs when one tries to get an item from an empty queue that is in the ``HALF_CLOSED`` state. '''
 
 
 Item = T.Any
@@ -131,7 +128,7 @@ class Queue:
         if self._state is QueueState.CLOSED:
             raise Closed
         if self._state is QueueState.HALF_CLOSED and self.is_empty:
-            raise NothingLeft
+            raise Closed
         self._trigger_consume()
         task = (yield _current_task)[0][0]  # 本来は except-Cancelled節に置きたい文だが、そこでは yield が使えないので仕方がない
         try:
@@ -145,7 +142,7 @@ class Queue:
             raise Closed
         if self.is_empty:
             if self._state is QueueState.HALF_CLOSED:
-                raise NothingLeft
+                raise Closed
             raise WouldBlock
         self._trigger_consume()
         return self._c_get()
@@ -181,14 +178,13 @@ class Queue:
         pop_putter = self._pop_putter
         pop_getter = self._pop_getter
         C = Closed
-        NL = NothingLeft
     
         while (putter := pop_putter()[0]) is not None:
             putter._throw_exc(C)
         if not self.is_empty:
             return
         while (getter := pop_getter()) is not None:
-            getter._throw_exc(NL)
+            getter._throw_exc(C)
 
     def close(self):
         '''
@@ -214,7 +210,7 @@ class Queue:
         try:
             while True:
                 yield await self.get()
-        except (NothingLeft, Closed):
+        except Closed:
             pass
 
     def _consume(self, dt):
@@ -225,7 +221,7 @@ class Queue:
         pop_getter = self._pop_getter
         c_put = self._c_put
         c_get = self._c_get
-        NL = NothingLeft
+        Closed_ = Closed
         HALF_CLOSED = QueueState.HALF_CLOSED
 
         while True:
@@ -245,7 +241,7 @@ class Queue:
             else:
                 if self._state is HALF_CLOSED:
                     while (getter := pop_getter()) is not None:
-                        getter._throw_exc(NL)
+                        getter._throw_exc(Closed_)
             if (not putters) or self.is_full:
                 break
         self._trigger_consume.cancel()

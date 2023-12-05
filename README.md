@@ -35,10 +35,10 @@ produced C
 consumed C
 ```
 
-``consumer()`` can be written in more primitive way:
+The ``consumer()`` above can be written in more primitive way:
 
 ```python
-from asynckivy_ext.queue import Closed, NothingLeft
+from asynckivy_ext.queue import Closed
 
 
 async def consumer(q):
@@ -46,7 +46,7 @@ async def consumer(q):
         while True:
             c = await q.get()
             print('consumed', c)
-    except (Closed, NothingLeft):
+    except Closed:
         pass
 ```
 
