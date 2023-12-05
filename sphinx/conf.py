@@ -63,47 +63,27 @@ intersphinx_mapping = {
 # https://www.sphinx-doc.org/en/master/usage/extensions/autodoc.html#configuration
 autodoc_mock_imports = ['kivy', ]
 autodoc_member_order = 'bysource'
-# autodoc_type_aliases = {
-#     'Item': 'Item',
-# }
+
 autodoc_default_options = {
    'members': True,
    'undoc-members': True,
-   'show-inheritance': True,
+   'no-show-inheritance': True,
 }
 
 
 def modify_signature(app, what: str, name: str, obj, options, signature, return_annotation: str,
-                     prefix="asynckivy.",
-                     len_prefix=len("asynckivy."),
-                     group1={'rest_of_touch_events', },
+                     prefix="asynckivy_ext.queue.",
+                     len_prefix=len("asynckivy_ext.queue."),
+                     group1={'QueueState', },
                      ):
     if not name.startswith(prefix):
         return (signature, return_annotation, )
     name = name[len_prefix:]
-    if signature is not None:
-        signature = signature.replace("kivy.animation.AnimationTransition.linear", "'linear'")
     if name in group1:
-        print(f"Emit the signature of {name!r}")
-        return ('(...)', return_annotation)
+        print(f"Hide the signature of {name!r}")
+        return ('', return_annotation)
     return (signature, return_annotation, )
 
 
-def modify_docstring(app, what, name, obj, options, lines,
-                     prefix="asynckivy.",
-                     len_prefix=len("asynckivy."),
-                     group1={'rest_of_touch_events': ':func:`rest_of_touch_moves`', },
-                     ):
-    if not name.startswith(prefix):
-        return
-    name = name[len_prefix:]
-    if name in group1:
-        print(f"Edit the docstring of {name!r}")
-        lines.clear()
-        lines.append(''.join(("An alias for ", group1[name], '.', )))
-        return
-
-
-# def setup(app):
-    # app.connect('autodoc-process-signature', modify_signature)
-    # app.connect('autodoc-process-docstring', modify_docstring)
+def setup(app):
+    app.connect('autodoc-process-signature', modify_signature)
