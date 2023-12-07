@@ -51,9 +51,8 @@ class Closed(QueueException):
     Occurs when:
 
     * one tries to get an item from a queue that is in the ``CLOSED`` state.
-    * one tries to put an item into a queue that is in the ``CLOSED`` state.
-    * one tries to put an item into a queue that is in the ``HALF_CLOSED`` state.
     * one tries to get an item from an **empty** queue that is in the ``HALF_CLOSED`` state.
+    * one tries to put an item into a queue that is in the ``CLOSED`` or ``HALF_CLOSED`` state.
     '''
 
 
@@ -62,10 +61,10 @@ Order = T.Literal['fifo', 'lifo', 'small-first']
 
 
 class Queue:
+    '''
+    :param capacity: Cannot be zero. Unlimited if None.
+    '''
     def __init__(self, *, capacity:T.Union[int, None]=None, order:Order='fifo'):
-        '''
-        If the :param:`capacity` is None, the queue has unlimited capacity.
-        '''
         if capacity is None:
             pass
         elif (not isinstance(capacity, int)) or capacity < 1:
@@ -79,8 +78,8 @@ class Queue:
         self._trigger_consume = Clock.create_trigger(self._consume)
 
     def _init_container(self, capacity, order):
-        # If the capacity is 1, there is no point of re-ordering items.
-        # Therefore, does not use heapq for a performance reason.
+        # If the capacity is 1, there is no point in reordering items.
+        # Therefore, for performance reasons, treat the order as 'lifo'.
         if capacity == 1 or order == 'lifo':
             c = []
             c_get = c.pop
@@ -125,6 +124,11 @@ class Queue:
 
     @types.coroutine
     def get(self) -> T.Awaitable[Item]:
+        '''
+        .. code-block::
+
+            item = await queue.get()
+        '''
         if self._state is QueueState.CLOSED:
             raise Closed
         if self._state is QueueState.HALF_CLOSED and self.is_empty:
@@ -138,6 +142,11 @@ class Queue:
             raise
 
     def get_nowait(self) -> Item:
+        '''
+        .. code-block::
+
+            item = queue.get_nowait()
+        '''
         if self._state is QueueState.CLOSED:
             raise Closed
         if self.is_empty:
@@ -149,6 +158,11 @@ class Queue:
 
     @types.coroutine
     def put(self, item) -> T.Awaitable:
+        '''
+        .. code-block::
+
+            await queue.put(item)
+        '''
         if self._state is not QueueState.OPENED:
             raise Closed
         self._trigger_consume()
@@ -161,6 +175,11 @@ class Queue:
             raise
 
     def put_nowait(self, item):
+        '''
+        .. code-block::
+
+            queue.put_nowait(item)
+        '''
         if self._state is not QueueState.OPENED:
             raise Closed
         if self.is_full:
@@ -207,6 +226,25 @@ class Queue:
             task._throw_exc(C)
 
     async def __aiter__(self):
+        '''
+        Keeps retrieving items from the queue until it is closed.
+
+        .. code-block::
+
+            async for item in queue:
+                ...
+
+        which is equivalent to:
+
+        .. code-block::
+
+            try:
+                while True:
+                    item = await queue.get()
+                    ...
+            except Closed:
+                pass
+        '''
         try:
             while True:
                 yield await self.get()

@@ -68,6 +68,7 @@ autodoc_default_options = {
    'members': True,
    'undoc-members': True,
    'no-show-inheritance': True,
+   'special-members': "__aiter__",
 }
 
 
