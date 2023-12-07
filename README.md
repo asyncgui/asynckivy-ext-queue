@@ -35,21 +35,6 @@ produced C
 consumed C
 ```
 
-The ``consumer()`` above can be written in more primitive way:
-
-```python
-from asynckivy_ext.queue import Closed
-
-
-async def consumer(q):
-    try:
-        while True:
-            c = await q.get()
-            print('consumed', c)
-    except Closed:
-        pass
-```
-
 ## Installation
 
 It's recommended to pin the minor version, because if it changed, it means some *important* breaking changes occurred.
