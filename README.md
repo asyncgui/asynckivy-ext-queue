@@ -1,3 +1,7 @@
+# Warning
+
+This library has been archived in favor of [asyncgui_ext.synctools](https://github.com/asyncgui/asyncgui-ext-synctools).
+
 # Queue
 
 Extension for `asynckivy` programs.
