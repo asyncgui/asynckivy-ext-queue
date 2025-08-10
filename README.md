@@ -1,5 +1,5 @@
-This library has been archived in favor of [asyncgui_ext.queue](https://github.com/asyncgui/asyncgui-ext-queue).
-However, it has a quirk caused by a limitation.
+This repository no longer provides source code and has been replaced by [asyncgui_ext.queue](https://github.com/asyncgui/asyncgui-ext-queue).
+However, that library has a quirk due to a limitation.
 If you are using Kivy, you can avoid it as follows:
 
 ```python
